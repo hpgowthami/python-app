@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/qrcode_db
+      - REDIS_URL=redis://redis:6379/0
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: qrcode_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+
+  worker:
+    build: .
+    command: celery -A src.worker.celery_worker worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
